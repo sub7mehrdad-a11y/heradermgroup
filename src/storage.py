@@ -1,14 +1,16 @@
 import json
 import os
 
-DEFAULT_STATE = {"offset": 0, "next_id": 1, "tasks": []}
+DEFAULT_STATE = {"offset": 0, "next_id": 1, "tasks": [], "dm_chats": {}}
 
 
 def load_state(path):
     if not os.path.exists(path):
         return dict(DEFAULT_STATE)
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        state = json.load(f)
+    state.setdefault("dm_chats", {})
+    return state
 
 
 def save_state(path, state):
