@@ -2,7 +2,9 @@ name: task-bot
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # Hourly. Each run stays connected for ~50 minutes, so the bot answers
+    # in about a second instead of waiting for the next scheduled poll.
+    - cron: "0 * * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -15,6 +17,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
 
@@ -24,17 +27,13 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: python main.py
+      - name: Configure git for state commits
+        run: |
+          git config user.name "task-bot"
+          git config user.email "task-bot@users.noreply.github.com"
+
+      - name: Listen for messages
+        run: python main.py --loop 3000 --git-sync
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-
-      - name: Commit updated task state
-        run: |
-          if ! git diff --quiet -- data/tasks.json; then
-            git config user.name "task-bot"
-            git config user.email "task-bot@users.noreply.github.com"
-            git add data/tasks.json
-            git commit -m "chore: update task state"
-            git push
-          fi

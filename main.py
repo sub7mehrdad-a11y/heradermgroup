@@ -1,5 +1,10 @@
+import argparse
+import json
 import os
+import signal
+import subprocess
 import sys
+import time
 
 from src.telegram_api import TelegramAPI
 from src.storage import load_state, save_state, load_config
@@ -12,6 +17,20 @@ from src.task_card import format_task_card, build_keyboard
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATE_PATH = os.path.join(BASE, "data", "tasks.json")
 CONFIG_PATH = os.path.join(BASE, "data", "config.json")
+
+LONG_POLL_SECONDS = 30
+COMMIT_DEBOUNCE_SECONDS = 120
+
+_stop = False
+
+
+def _request_stop(signum, frame):
+    global _stop
+    _stop = True
+
+
+def _fingerprint(state):
+    return json.dumps(state, sort_keys=True, ensure_ascii=False)
 
 
 def _find_task(state, task_id):
@@ -90,60 +109,124 @@ def _handle_private(state, tg, msg):
         )
 
 
+def _process_updates(tg, state, config, gemini_key, updates):
+    for u in updates:
+        state["offset"] = u["update_id"] + 1
+
+        cq = u.get("callback_query")
+        if cq:
+            _handle_callback(state, config, tg, cq)
+            continue
+
+        msg = u.get("message")
+        if not msg:
+            continue
+
+        if msg.get("chat", {}).get("type") == "private":
+            from_user = msg.get("from", {}) or {}
+            if (from_user.get("username") or "").lower() in config["users"]:
+                _handle_private(state, tg, msg)
+            continue
+
+        text = (msg.get("text") or "").strip()
+        if text.startswith("/"):
+            items = process_update(state, config, msg)
+        else:
+            items = handle_free_text(state, config, msg, gemini_key)
+
+        _send_items(tg, state, config, msg["chat"]["id"], msg.get("message_thread_id"), items)
+
+
+def _git(*args):
+    return subprocess.run(
+        ["git"] + list(args), cwd=BASE,
+        capture_output=True, text=True, timeout=120,
+    )
+
+
+def _git_sync():
+    """Persist the state file back to the repo. Best-effort: a git failure
+    must never take the bot down, since state is re-read from disk anyway
+    and the next sync will carry it."""
+    try:
+        if not _git("diff", "--quiet", "--", "data/tasks.json").returncode:
+            return False
+        _git("add", "data/tasks.json")
+        _git("commit", "-m", "chore: update task state")
+        push = _git("push")
+        if push.returncode:
+            # Someone else (a previous run) pushed first — rebase and retry once.
+            _git("pull", "--rebase")
+            push = _git("push")
+            if push.returncode:
+                print("git push failed:", push.stderr.strip()[:300])
+                return False
+        return True
+    except Exception as e:
+        print("git sync error:", e)
+        return False
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--loop", type=int, default=0, metavar="SECONDS",
+        help="stay connected and respond in real time for this many seconds",
+    )
+    parser.add_argument(
+        "--git-sync", action="store_true",
+        help="commit and push the state file from inside the loop",
+    )
+    args = parser.parse_args()
+
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         print("TELEGRAM_BOT_TOKEN تنظیم نشده.")
         sys.exit(1)
     gemini_key = os.environ.get("GEMINI_API_KEY")
 
+    signal.signal(signal.SIGINT, _request_stop)
+    signal.signal(signal.SIGTERM, _request_stop)
+
     tg = TelegramAPI(token)
     state = load_state(STATE_PATH)
     config = load_config(CONFIG_PATH)
 
-    offset = state.get("offset", 0) or None
+    deadline = time.monotonic() + args.loop if args.loop else None
+    poll_timeout = LONG_POLL_SECONDS if args.loop else 0
+    last_saved = _fingerprint(state)
+    last_commit = time.monotonic()
+
     while True:
-        updates = tg.get_updates(offset=offset)
-        if not updates:
+        updates = []
+        try:
+            updates = tg.get_updates(
+                offset=state.get("offset") or None, timeout=poll_timeout
+            )
+            _process_updates(tg, state, config, gemini_key, updates)
+            check_and_send_reminders(state, tg, config, now_iran())
+        except Exception as e:
+            print("cycle error:", e)
+            time.sleep(5)
+
+        current = _fingerprint(state)
+        if current != last_saved:
+            save_state(STATE_PATH, state)
+            last_saved = current
+
+        if not args.loop:
+            if not updates:
+                break  # single-pass mode: keep draining until the queue is empty
+            continue
+        if _stop or time.monotonic() >= deadline:
             break
-        for u in updates:
-            offset = u["update_id"] + 1
-
-            cq = u.get("callback_query")
-            if cq:
-                _handle_callback(state, config, tg, cq)
-                continue
-
-            msg = u.get("message")
-            if not msg:
-                continue
-
-            # Only usernames registered in known usernames may register a
-            # DM; unknown senders in a private chat are ignored entirely.
-            if msg.get("chat", {}).get("type") == "private":
-                from_user = msg.get("from", {}) or {}
-                if (from_user.get("username") or "").lower() in config["users"]:
-                    _handle_private(state, tg, msg)
-                continue
-
-            text = (msg.get("text") or "").strip()
-            chat_id = msg["chat"]["id"]
-            thread_id = msg.get("message_thread_id")
-
-            if text.startswith("/"):
-                items = process_update(state, config, msg)
-            else:
-                items = handle_free_text(state, config, msg, gemini_key)
-
-            _send_items(tg, state, config, chat_id, thread_id, items)
-
-        if len(updates) < 100:
-            break
-    state["offset"] = offset or 0
-
-    check_and_send_reminders(state, tg, config, now_iran())
+        if args.git_sync and (time.monotonic() - last_commit) >= COMMIT_DEBOUNCE_SECONDS:
+            _git_sync()
+            last_commit = time.monotonic()
 
     save_state(STATE_PATH, state)
+    if args.git_sync:
+        _git_sync()
 
 
 if __name__ == "__main__":

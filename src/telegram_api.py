@@ -7,9 +7,9 @@ class TelegramAPI:
     def __init__(self, token):
         self.token = token
 
-    def _call(self, method, **params):
+    def _call(self, method, http_timeout=30, **params):
         url = API_ROOT.format(token=self.token, method=method)
-        r = requests.post(url, json=params, timeout=30)
+        r = requests.post(url, json=params, timeout=http_timeout)
         r.raise_for_status()
         data = r.json()
         if not data.get("ok"):
@@ -23,7 +23,9 @@ class TelegramAPI:
         }
         if offset is not None:
             params["offset"] = offset
-        return self._call("getUpdates", **params)
+        # The HTTP read timeout must outlast Telegram's own long-poll window,
+        # otherwise requests aborts the connection before Telegram replies.
+        return self._call("getUpdates", http_timeout=timeout + 20, **params)
 
     def send_message(self, chat_id, text, message_thread_id=None, reply_to_message_id=None, reply_markup=None):
         params = {"chat_id": chat_id, "text": text}
