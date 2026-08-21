@@ -2,7 +2,9 @@ from .gemini_client import extract_task, classify_followup
 from .date_parser import parse_deadline, now_iran
 from .commands import create_task, mark_done, handoff_task
 from .task_card import format_task_card, build_keyboard
-from .task_hint import looks_like_task
+from .task_hint import looks_like_task, looks_like_followup
+
+THINKING_NOTICE = "⏳ دارم بررسی می‌کنم…"
 
 AI_DOWN_NOTICE = (
     "به نظر می‌رسه این پیام یک تسکه، ولی الان نتونستم به هوش مصنوعی وصل بشم.\n"
@@ -94,11 +96,16 @@ def handle_dm_text(state, config, msg, api_key):
     }]
 
 
-def handle_free_text(state, config, msg, api_key):
+def handle_free_text(state, config, msg, api_key, on_slow=None):
     """Handle a non-command message via Gemini: either as a follow-up
     (done/handoff) to the sender's own open task in this topic, or as a
     brand-new task. Ordinary chat is filtered out locally first so it never
     costs an API call.
+
+    `on_slow` is called just before the first (slow) model request and should
+    return the message id of a placeholder posted in the chat. Whatever this
+    function returns then replaces or removes that placeholder, so the group
+    can see the bot working instead of guessing.
     """
     if not api_key:
         return []
@@ -115,28 +122,44 @@ def handle_free_text(state, config, msg, api_key):
     chat_id = msg["chat"]["id"]
     thread_id = msg.get("message_thread_id")
 
+    is_task_candidate = looks_like_task(text, users)
     candidate = _find_open_task_for(state, chat_id, thread_id, username)
-    if candidate:
+    is_followup_candidate = candidate is not None and looks_like_followup(text)
+
+    if not is_task_candidate and not is_followup_candidate:
+        return []
+
+    placeholder_id = on_slow() if on_slow else None
+
+    def finish(items):
+        if placeholder_id is None:
+            return items
+        if not items:
+            return [{"delete_message_id": placeholder_id}]
+        items[0] = dict(items[0], replace_message_id=placeholder_id)
+        return items
+
+    if is_followup_candidate:
         result = classify_followup(api_key, text, candidate, users)
         if result and result.get("type") == "done":
             ok, reply, _task = mark_done(state, candidate["id"], username, result.get("note", ""))
             if ok:
-                return [{"text": reply}, {"edit_task_id": candidate["id"]}]
+                return finish([{"text": reply}, {"edit_task_id": candidate["id"]}])
         elif result and result.get("type") == "handoff":
             ok, reply, _task = handoff_task(
                 state, config, candidate["id"], username, result.get("note", "")
             )
             if ok:
-                return [{"text": reply}, {"edit_task_id": candidate["id"]}]
+                return finish([{"text": reply}, {"edit_task_id": candidate["id"]}])
 
-    if not looks_like_task(text, users):
-        return []
+    if not is_task_candidate:
+        return finish([])
 
     extracted = extract_task(api_key, text, username, users, now_iran().isoformat())
     if extracted is None:
-        return [{"text": AI_DOWN_NOTICE}]
+        return finish([{"text": AI_DOWN_NOTICE}])
     if not extracted.get("is_task"):
-        return []
+        return finish([])
 
     phrase = (extracted.get("deadline_phrase") or "").strip()
     deadline = parse_deadline(phrase) if phrase else None
@@ -147,4 +170,4 @@ def handle_free_text(state, config, msg, api_key):
         title=extracted["title"], description=extracted.get("description", ""),
         deadline=deadline,
     )
-    return _card_items(task, users)
+    return finish(_card_items(task, users))

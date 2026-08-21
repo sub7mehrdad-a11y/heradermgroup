@@ -9,7 +9,7 @@ import time
 from src.telegram_api import TelegramAPI
 from src.storage import load_state, save_state, load_config
 from src.commands import process_update, mark_done, handoff_task, set_deadline
-from src.ai_flow import handle_free_text, handle_dm_text
+from src.ai_flow import handle_free_text, handle_dm_text, THINKING_NOTICE
 from src.reminders import check_and_send_reminders
 from src.date_parser import now_iran, parse_deadline
 from src.task_card import format_task_card, build_keyboard
@@ -109,6 +109,32 @@ def _send_items(tg, state, config, chat_id, thread_id, items):
         if "edit_task_id" in item:
             _refresh_card(tg, state, config, item["edit_task_id"])
             continue
+
+        if "delete_message_id" in item:
+            try:
+                tg.delete_message(chat_id, item["delete_message_id"])
+            except Exception as e:
+                print("delete failed:", e)
+            continue
+
+        replace_id = item.get("replace_message_id")
+        if replace_id is not None:
+            try:
+                tg.edit_message_text(
+                    chat_id, replace_id, item["text"],
+                    reply_markup=item.get("reply_markup"),
+                )
+                if item.get("attach_task_id"):
+                    task = _find_task(state, item["attach_task_id"])
+                    if task:
+                        task["task_message_id"] = replace_id
+                        _mirror_to_assignee_dm(tg, state, config, task)
+                continue
+            except Exception as e:
+                # Fall through to sending a fresh message rather than losing
+                # the reply entirely.
+                print("replace failed:", e)
+
         result = tg.send_message(
             chat_id, item["text"],
             message_thread_id=thread_id,
@@ -205,7 +231,20 @@ def _process_updates(tg, state, config, gemini_key, updates):
         if text.startswith("/"):
             items = process_update(state, config, msg)
         else:
-            items = handle_free_text(state, config, msg, gemini_key)
+            def _post_placeholder(_msg=msg):
+                try:
+                    posted = tg.send_message(
+                        _msg["chat"]["id"], THINKING_NOTICE,
+                        message_thread_id=_msg.get("message_thread_id"),
+                    )
+                    return posted.get("message_id") if posted else None
+                except Exception as e:
+                    print("placeholder failed:", e)
+                    return None
+
+            items = handle_free_text(
+                state, config, msg, gemini_key, on_slow=_post_placeholder
+            )
 
         _send_items(tg, state, config, msg["chat"]["id"], msg.get("message_thread_id"), items)
 

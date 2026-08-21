@@ -42,6 +42,9 @@ class TelegramAPI:
         params["reply_markup"] = reply_markup if reply_markup is not None else {"inline_keyboard": []}
         return self._call("editMessageText", **params)
 
+    def delete_message(self, chat_id, message_id):
+        return self._call("deleteMessage", chat_id=chat_id, message_id=message_id)
+
     def answer_callback_query(self, callback_query_id, text=None):
         params = {"callback_query_id": callback_query_id}
         if text:

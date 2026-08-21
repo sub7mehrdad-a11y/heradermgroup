@@ -26,6 +26,17 @@ REQUEST_HINTS = (
     "بزن", "قرار بده", "قرار بدید", "وارد کن", "به‌روز کن", "بروز کن",
 )
 
+# Words that suggest a message reports progress on work already assigned.
+# Without this gate the bot asked the model "is this an answer to your open
+# task?" about literally every line the assignee typed, which cost a request
+# and several seconds each time.
+FOLLOWUP_HINTS = (
+    "تموم", "تمام", "انجام شد", "انجام دادم", "فرستادم", "ارسال کردم",
+    "ثبت کردم", "ثبت شد", "آماده شد", "آماده‌ست", "امادست", "درست شد",
+    "حله", "اوکی", "اوکیه", "شد ", "زدم", "گذاشتم", "قرار دادم",
+    "نصفه", "بقیه‌ش", "بقیه اش", "بقیشو", "باهات", "با تو",
+)
+
 MIN_LENGTH = 12
 
 
@@ -45,3 +56,10 @@ def looks_like_task(text, users):
             return True
 
     return any(hint in text for hint in REQUEST_HINTS)
+
+
+def looks_like_followup(text):
+    """True if `text` might be reporting progress on an existing task."""
+    if not text:
+        return False
+    return any(hint in text for hint in FOLLOWUP_HINTS)

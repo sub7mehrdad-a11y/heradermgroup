@@ -5,7 +5,10 @@ import requests
 
 MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"]
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-RETRY_DELAYS = [0, 15, 45]
+# Kept short on purpose. The old 0/15/45 ladder meant one flaky message
+# could stall the whole bot for two minutes per model — and the bot is
+# single-threaded, so everything behind it waited too.
+RETRY_DELAYS = [0, 3, 8]
 
 
 def _call_gemini(api_key, model, prompt):
