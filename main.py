@@ -167,7 +167,19 @@ def _git_sync():
         return False
 
 
+def _force_utf8_output():
+    """Windows consoles default to cp1252, which raises UnicodeEncodeError on
+    any Persian print(). Harmless on the Linux CI runner, fatal locally."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
+
 def main():
+    _force_utf8_output()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--loop", type=int, default=0, metavar="SECONDS",
@@ -179,11 +191,23 @@ def main():
     )
     args = parser.parse_args()
 
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip()
+    gemini_key = (os.environ.get("GEMINI_API_KEY") or "").strip()
+
     if not token:
-        print("TELEGRAM_BOT_TOKEN تنظیم نشده.")
+        print(
+            "خطا: TELEGRAM_BOT_TOKEN خالی است.\n"
+            "  → Settings → Secrets and variables → Actions → تب Secrets (نه Variables)\n"
+            "  → دکمه New repository secret\n"
+            "  → Name دقیقاً: TELEGRAM_BOT_TOKEN\n"
+            "دقت کن Secret باید روی همین ریپو ساخته بشه؛ Secretهای ریپوهای دیگه اینجا دیده نمی‌شن."
+        )
         sys.exit(1)
-    gemini_key = os.environ.get("GEMINI_API_KEY")
+
+    if not gemini_key:
+        # Not fatal: slash commands still work, only free-text parsing is off.
+        print("هشدار: GEMINI_API_KEY خالی است — تشخیص متن آزاد غیرفعال می‌ماند، "
+              "ولی دستورهایی مثل /assign و /done کار می‌کنند.")
 
     signal.signal(signal.SIGINT, _request_stop)
     signal.signal(signal.SIGTERM, _request_stop)
