@@ -9,7 +9,7 @@ import time
 from src.telegram_api import TelegramAPI
 from src.storage import load_state, save_state, load_config
 from src.commands import process_update, mark_done, handoff_task, set_deadline
-from src.ai_flow import handle_free_text
+from src.ai_flow import handle_free_text, handle_dm_text
 from src.reminders import check_and_send_reminders
 from src.date_parser import now_iran, parse_deadline
 from src.task_card import format_task_card, build_keyboard
@@ -47,18 +47,61 @@ def _find_task(state, task_id):
     return next((t for t in state["tasks"] if t["id"] == task_id), None)
 
 
-def _refresh_card(tg, state, config, task_id):
-    task = _find_task(state, task_id)
-    if task is None or not task.get("task_message_id"):
+DM_HEADER = "🔔 تسک جدید برای تو در گروه:\n\n"
+
+
+def _mirror_to_assignee_dm(tg, state, config, task):
+    """Put a copy of the card in the assignee's private chat so they see the
+    task without opening the group, and can close it from there."""
+    dm_chat_id = state.get("dm_chats", {}).get(task["assignee"])
+    if not dm_chat_id or dm_chat_id == task["chat_id"]:
         return
+    task.setdefault("dm_message_ids", {})
+    if task["assignee"] in task["dm_message_ids"]:
+        return
+    users = config["users"]
     try:
-        tg.edit_message_text(
-            task["chat_id"], task["task_message_id"],
-            format_task_card(task, config["users"]),
-            reply_markup=build_keyboard(task, config["users"]),
+        result = tg.send_message(
+            dm_chat_id,
+            DM_HEADER + format_task_card(task, users),
+            reply_markup=build_keyboard(task, users),
         )
     except Exception as e:
-        print("edit failed:", e)
+        # Most likely the user never pressed /start, or blocked the bot.
+        print("dm mirror failed:", e)
+        return
+    if result:
+        task["dm_message_ids"][task["assignee"]] = result.get("message_id")
+
+
+def _refresh_card(tg, state, config, task_id):
+    """Re-render every copy of a task's card — the one in the group topic and
+    any in private chats — so they never disagree about its status."""
+    task = _find_task(state, task_id)
+    if task is None:
+        return
+    users = config["users"]
+    body = format_task_card(task, users)
+    keyboard = build_keyboard(task, users)
+
+    if task.get("task_message_id"):
+        try:
+            tg.edit_message_text(task["chat_id"], task["task_message_id"], body, reply_markup=keyboard)
+        except Exception as e:
+            print("edit failed (group):", e)
+
+    for username, message_id in (task.get("dm_message_ids") or {}).items():
+        dm_chat_id = state.get("dm_chats", {}).get(username)
+        if not dm_chat_id:
+            continue
+        try:
+            tg.edit_message_text(dm_chat_id, message_id, DM_HEADER + body, reply_markup=keyboard)
+        except Exception as e:
+            print("edit failed (dm):", e)
+
+    # A handoff moves the task to someone who may not have a copy yet.
+    if task["status"] == "open":
+        _mirror_to_assignee_dm(tg, state, config, task)
 
 
 def _send_items(tg, state, config, chat_id, thread_id, items):
@@ -75,6 +118,7 @@ def _send_items(tg, state, config, chat_id, thread_id, items):
             task = _find_task(state, item["attach_task_id"])
             if task:
                 task["task_message_id"] = result.get("message_id")
+                _mirror_to_assignee_dm(tg, state, config, task)
 
 
 def _handle_callback(state, config, tg, cq):
@@ -113,17 +157,29 @@ def _handle_callback(state, config, tg, cq):
         _refresh_card(tg, state, config, task_id)
 
 
-def _handle_private(state, tg, msg):
+def _handle_private(state, config, tg, msg, gemini_key):
     from_user = msg.get("from", {}) or {}
     username = (from_user.get("username") or "").lower()
+    chat_id = msg["chat"]["id"]
+    text = (msg.get("text") or "").strip()
 
     state.setdefault("dm_chats", {})
-    state["dm_chats"][username] = msg["chat"]["id"]
-    if (msg.get("text") or "").strip() == "/start":
+    state["dm_chats"][username] = chat_id
+
+    if text == "/start":
         tg.send_message(
-            msg["chat"]["id"],
-            "ثبت شد ✅ از این به بعد یادآوری‌های خصوصی تسک‌هات رو همینجا هم برات می‌فرستم.",
+            chat_id,
+            "ثبت شد ✅ از این به بعد تسک‌های جدید و یادآوری‌هاشون رو همینجا هم برات می‌فرستم.\n"
+            "می‌تونی همینجا جواب بدی یا دکمه «انجام شد» رو بزنی.",
         )
+        return
+
+    if text.startswith("/"):
+        items = process_update(state, config, msg)
+    else:
+        items = handle_dm_text(state, config, msg, gemini_key)
+
+    _send_items(tg, state, config, chat_id, None, items)
 
 
 def _process_updates(tg, state, config, gemini_key, updates):
@@ -142,7 +198,7 @@ def _process_updates(tg, state, config, gemini_key, updates):
         if msg.get("chat", {}).get("type") == "private":
             from_user = msg.get("from", {}) or {}
             if (from_user.get("username") or "").lower() in config["users"]:
-                _handle_private(state, tg, msg)
+                _handle_private(state, config, tg, msg, gemini_key)
             continue
 
         text = (msg.get("text") or "").strip()

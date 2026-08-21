@@ -29,6 +29,71 @@ def _card_items(task, users):
     }]
 
 
+def _open_tasks_for(state, username):
+    return [t for t in state["tasks"] if t["status"] == "open" and t["assignee"] == username]
+
+
+def _task_list_lines(tasks):
+    return "\n".join(f"#{t['id']} — {t['title']}" for t in tasks)
+
+
+def handle_dm_text(state, config, msg, api_key):
+    """A private message is always addressed to the bot, so unlike the group
+    this never stays silent — the user gets an answer either way."""
+    text = (msg.get("text") or "").strip()
+    if not text:
+        return []
+
+    username = ((msg.get("from") or {}).get("username") or "").lower()
+    users = config["users"]
+    if username not in users:
+        return []
+
+    open_tasks = _open_tasks_for(state, username)
+    if not open_tasks:
+        return [{"text": "الان تسک بازی نداری. 🎉"}]
+
+    explicit = None
+    for t in open_tasks:
+        if f"#{t['id']}" in text or text.split()[0].strip("#:.") == str(t["id"]):
+            explicit = t
+            break
+
+    if explicit is not None:
+        target = explicit
+    elif len(open_tasks) == 1:
+        target = open_tasks[0]
+    else:
+        return [{
+            "text": "چند تا تسک باز داری — بگو کدوم:\n"
+                    + _task_list_lines(open_tasks)
+                    + "\n\nشماره‌شو اول پیامت بنویس، مثلاً:\n"
+                      f"{open_tasks[0]['id']} انجام شد"
+        }]
+
+    if not api_key:
+        return [{"text": f"برای بستن تسک #{target['id']} بنویس: /done {target['id']}"}]
+
+    result = classify_followup(api_key, text, target, users)
+    if result is None:
+        return [{"text": f"الان به هوش مصنوعی وصل نشدم. برای بستن تسک بنویس: /done {target['id']}"}]
+
+    if result.get("type") == "done":
+        ok, reply, _t = mark_done(state, target["id"], username, result.get("note", ""))
+        if ok:
+            return [{"text": reply}, {"edit_task_id": target["id"]}]
+    elif result.get("type") == "handoff":
+        ok, reply, _t = handoff_task(state, config, target["id"], username, result.get("note", ""))
+        if ok:
+            return [{"text": reply}, {"edit_task_id": target["id"]}]
+
+    return [{
+        "text": f"متوجه نشدم این جواب تسک #{target['id']} رو می‌بنده یا نه.\n"
+                f"اگه تمومه بنویس: /done {target['id']} <توضیح>\n"
+                f"اگه بخشی‌ش مونده: /handoff {target['id']} | <توضیح>"
+    }]
+
+
 def handle_free_text(state, config, msg, api_key):
     """Handle a non-command message via Gemini: either as a follow-up
     (done/handoff) to the sender's own open task in this topic, or as a
