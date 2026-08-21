@@ -39,22 +39,46 @@ FOLLOWUP_HINTS = (
 
 MIN_LENGTH = 12
 
+# Anything that can sit between the name and the actual request.
+_VOCATIVE_LEADS = ("جان", "عزیز", "جون")
+_LEADING_JUNK = " \t\n،,.:!-–—@"
+
+
+def leading_name(text, users):
+    """The username a message is addressed to, when it opens with their name.
+
+    This is the agreed convention for filing a task: start the sentence with
+    the other person's name. Because it is a plain string match it is exact
+    and predictable — and it settles the assignee outright, instead of asking
+    the model to infer it. That inference is what once filed "سفارش ندادم
+    هنوز" as a task for its own author.
+    """
+    if not text:
+        return None
+    head = text.lstrip(_LEADING_JUNK)
+    lowered = head.lower()
+
+    for username, display_name in users.items():
+        if lowered.startswith(username):
+            return username
+        if not display_name:
+            continue
+        # Persian vocative attaches to the name ("فرزان" -> "فرزانه") or
+        # follows it as a separate word ("فرزان جان").
+        if head.startswith(display_name):
+            return username
+        for lead in _VOCATIVE_LEADS:
+            if head.startswith(f"{display_name}{lead}") or head.startswith(f"{display_name} {lead}"):
+                return username
+    return None
+
 
 def looks_like_task(text, users):
     """True if `text` plausibly assigns work and deserves an AI call."""
     if not text or len(text) < MIN_LENGTH:
         return False
-
-    lowered = text.lower()
-
-    for username, display_name in users.items():
-        if username in lowered:
-            return True
-        # Persian vocative often appends a letter ("فرزان" -> "فرزانه"),
-        # so match the name as a prefix rather than a whole word.
-        if display_name and display_name in text:
-            return True
-
+    if leading_name(text, users) is not None:
+        return True
     return any(hint in text for hint in REQUEST_HINTS)
 
 

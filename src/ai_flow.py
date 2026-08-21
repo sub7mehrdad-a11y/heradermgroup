@@ -2,7 +2,7 @@ from .gemini_client import extract_task, classify_followup
 from .date_parser import parse_deadline, now_iran
 from .commands import create_task, mark_done, handoff_task
 from .task_card import format_task_card, build_keyboard
-from .task_hint import looks_like_task, looks_like_followup
+from .task_hint import looks_like_task, looks_like_followup, leading_name
 
 THINKING_NOTICE = "⏳ دارم بررسی می‌کنم…"
 
@@ -164,9 +164,14 @@ def handle_free_text(state, config, msg, api_key, on_slow=None):
     phrase = (extracted.get("deadline_phrase") or "").strip()
     deadline = parse_deadline(phrase) if phrase else None
 
+    # Addressing someone by name is unambiguous, so it wins over the model's
+    # guess at who the work belongs to.
+    addressed = leading_name(text, users)
+    assignee = addressed or extracted["assignee"]
+
     task = create_task(
         state, chat_id, thread_id,
-        creator=username, assignee=extracted["assignee"],
+        creator=username, assignee=assignee,
         title=extracted["title"], description=extracted.get("description", ""),
         deadline=deadline,
     )
