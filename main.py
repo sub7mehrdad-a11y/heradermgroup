@@ -43,6 +43,17 @@ def _fingerprint(state):
     return json.dumps(state, sort_keys=True, ensure_ascii=False)
 
 
+def _tasks_fingerprint(state):
+    """Just the parts worth committing immediately. If a run is cancelled
+    before its state reaches the repo, the next one restarts from the old
+    offset and re-reads those messages — which would file the same task
+    twice. Debouncing the poll offset is fine; debouncing a new task is not.
+    """
+    return tuple(
+        (t["id"], t["status"], t["assignee"], t.get("deadline")) for t in state["tasks"]
+    )
+
+
 def _find_task(state, task_id):
     return next((t for t in state["tasks"] if t["id"] == task_id), None)
 
@@ -332,6 +343,7 @@ def main():
     poll_timeout = LONG_POLL_SECONDS if args.loop else 0
     last_saved = _fingerprint(state)
     last_commit = time.monotonic()
+    last_tasks_fp = _tasks_fingerprint(state)
 
     consecutive_errors = 0
     recent_errors = []
@@ -374,9 +386,13 @@ def main():
             continue
         if _stop or time.monotonic() >= deadline:
             break
-        if args.git_sync and (time.monotonic() - last_commit) >= COMMIT_DEBOUNCE_SECONDS:
-            _git_sync()
-            last_commit = time.monotonic()
+        if args.git_sync:
+            tasks_fp = _tasks_fingerprint(state)
+            due = (time.monotonic() - last_commit) >= COMMIT_DEBOUNCE_SECONDS
+            if tasks_fp != last_tasks_fp or due:
+                _git_sync()
+                last_commit = time.monotonic()
+                last_tasks_fp = tasks_fp
 
     save_state(STATE_PATH, state)
     if args.git_sync:

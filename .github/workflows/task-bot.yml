@@ -12,12 +12,15 @@ permissions:
 
 concurrency:
   group: task-bot-run
-  cancel-in-progress: false
+  # A new run takes over from the old one instead of queueing behind it.
+  # With queueing, pressing "Run workflow" appeared to do nothing until the
+  # current 50-minute session ended, so deploying meant cancelling by hand.
+  cancel-in-progress: true
 
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +48,9 @@ jobs:
           git config user.email "task-bot@users.noreply.github.com"
 
       - name: Listen for messages
-        run: python main.py --loop 3000 --git-sync
+        # Slightly longer than the hourly cron, so the next run cancels this
+        # one rather than leaving the bot offline between sessions.
+        run: python main.py --loop 3540 --git-sync
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

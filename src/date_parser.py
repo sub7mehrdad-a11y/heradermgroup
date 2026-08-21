@@ -7,6 +7,24 @@ IRAN_TZ = timezone(timedelta(hours=3, minutes=30))
 _PM_WORDS = ("عصر", "بعدازظهر", "شب")
 _TIME = r'(?:ساعت\s*)?(\d{1,2})(?::(\d{2}))?\s*(صبح|ظهر|بعدازظهر|عصر|شب)?'
 
+# Spelled-out counts, because people write "یک هفته دیگه" far more often
+# than "7 روز دیگر". (Persian-Indic digits already work: \d and int() are
+# Unicode-aware.)
+_WORD_NUMBERS = {
+    "یک": 1, "یه": 1, "دو": 2, "سه": 3, "چهار": 4, "پنج": 5, "شش": 6,
+    "شیش": 6, "هفت": 7, "هشت": 8, "نه": 9, "ده": 10, "دوهفته": 2,
+}
+_UNIT_DAYS = {"روز": 1, "هفته": 7, "ماه": 30}
+_COUNT = r'(\d+|' + "|".join(sorted(_WORD_NUMBERS, key=len, reverse=True)) + r')'
+# "دیگه" is the spoken form and is what actually gets typed in chat.
+_LATER = r'(?:دیگه|دیگر|بعد)'
+
+
+def _count_value(token):
+    if token.isdigit():
+        return int(token)
+    return _WORD_NUMBERS.get(token)
+
 
 def now_iran():
     return datetime.now(IRAN_TZ)
@@ -60,17 +78,23 @@ def parse_deadline(text, now=None):
         mi = int(m.group(2)) if m.group(2) else 0
         return _at(base, h, mi)
 
-    m = re.match(r'^(\d+)\s*روز\s*دیگر(?:\s+' + _TIME + r')?$', t)
+    unit_names = "|".join(_UNIT_DAYS)
+    m = re.match(
+        r'^' + _COUNT + r'\s*(' + unit_names + r')\s*' + _LATER + r'(?:\s+' + _TIME + r')?$', t
+    )
     if m:
-        days = int(m.group(1))
-        base = now + timedelta(days=days)
-        if m.group(2):
-            return _at(base, _adjust_period(int(m.group(2)), m.group(4)), int(m.group(3) or 0))
-        return base
+        count = _count_value(m.group(1))
+        if count is not None:
+            base = now + timedelta(days=count * _UNIT_DAYS[m.group(2)])
+            if m.group(3):
+                return _at(base, _adjust_period(int(m.group(3)), m.group(5)), int(m.group(4) or 0))
+            return _at(base, 18, 0)
 
-    m = re.match(r'^(\d+)\s*ساعت\s*دیگر$', t)
+    m = re.match(r'^' + _COUNT + r'\s*ساعت\s*' + _LATER + r'$', t)
     if m:
-        return now + timedelta(hours=int(m.group(1)))
+        count = _count_value(m.group(1))
+        if count is not None:
+            return now + timedelta(hours=count)
 
     m = re.match(r'^' + _TIME + r'$', t)
     if m and m.group(1):
