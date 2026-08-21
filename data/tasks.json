@@ -1,5 +1,5 @@
 {
-  "offset": 761803644,
+  "offset": 761803645,
   "next_id": 7,
   "tasks": [
     {
@@ -148,7 +148,7 @@
       "thread_id": 1689,
       "created_at": "2026-08-21T10:21:01.611416+03:30",
       "deadline": "2026-08-28T18:00:00+03:30",
-      "status": "open",
+      "status": "done",
       "history": [
         {
           "actor": "mehrdad1400",
@@ -161,10 +161,16 @@
           "action": "handoff",
           "note": null,
           "at": "2026-08-21T22:21:58.964254+03:30"
+        },
+        {
+          "actor": "farzan1369",
+          "action": "done",
+          "note": null,
+          "at": "2026-08-21T22:22:03.512186+03:30"
         }
       ],
       "last_reminder_at": "2026-08-21T22:22:00.693963+03:30",
-      "done_at": null,
+      "done_at": "2026-08-21T22:22:03.512186+03:30",
       "task_message_id": 21576,
       "dm_message_ids": {
         "farzan1369": 15,
