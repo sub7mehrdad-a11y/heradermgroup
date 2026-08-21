@@ -27,6 +27,18 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # These probes exist so a connectivity failure shows up as a named
+      # step in the Actions API, which is readable without a token — the
+      # job log itself is not. continue-on-error keeps every probe running
+      # so one outage doesn't mask another.
+      - name: Probe Telegram API
+        continue-on-error: true
+        run: curl -sS -f -m 20 -o /dev/null "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/getMe"
+
+      - name: Probe Gemini API
+        continue-on-error: true
+        run: curl -sS -f -m 20 -o /dev/null "https://generativelanguage.googleapis.com/v1beta/models?key=${{ secrets.GEMINI_API_KEY }}"
+
       - name: Configure git for state commits
         run: |
           git config user.name "task-bot"

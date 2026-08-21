@@ -20,6 +20,7 @@ CONFIG_PATH = os.path.join(BASE, "data", "config.json")
 
 LONG_POLL_SECONDS = 30
 COMMIT_DEBOUNCE_SECONDS = 120
+MAX_CONSECUTIVE_ERRORS = 6
 
 # Maps a deadline button's callback code to a phrase parse_deadline understands.
 DEADLINE_OPTIONS = {
@@ -236,6 +237,7 @@ def main():
     last_saved = _fingerprint(state)
     last_commit = time.monotonic()
 
+    consecutive_errors = 0
     while True:
         updates = []
         try:
@@ -244,8 +246,22 @@ def main():
             )
             _process_updates(tg, state, config, gemini_key, updates)
             check_and_send_reminders(state, tg, config, now_iran())
+            consecutive_errors = 0
         except Exception as e:
-            print("cycle error:", e)
+            consecutive_errors += 1
+            print(f"cycle error ({consecutive_errors}):", repr(e), flush=True)
+            # Fail loudly rather than idling for the rest of the job window
+            # pretending to work — a silently-broken bot is what hid this.
+            if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                print(
+                    f"خطا: {consecutive_errors} بار پشت سر هم نتونستم به تلگرام وصل بشم. "
+                    "اجرا متوقف شد.",
+                    flush=True,
+                )
+                save_state(STATE_PATH, state)
+                if args.git_sync:
+                    _git_sync()
+                sys.exit(1)
             time.sleep(5)
 
         current = _fingerprint(state)
