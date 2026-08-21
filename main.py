@@ -17,6 +17,7 @@ from src.task_card import format_task_card, build_keyboard
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATE_PATH = os.path.join(BASE, "data", "tasks.json")
 CONFIG_PATH = os.path.join(BASE, "data", "config.json")
+ERROR_LOG_PATH = os.path.join(BASE, "data", "last_error.log")
 
 LONG_POLL_SECONDS = 30
 COMMIT_DEBOUNCE_SECONDS = 120
@@ -165,9 +166,9 @@ def _git_sync():
     must never take the bot down, since state is re-read from disk anyway
     and the next sync will carry it."""
     try:
-        if not _git("diff", "--quiet", "--", "data/tasks.json").returncode:
+        if not _git("diff", "--quiet", "--", "data/").returncode:
             return False
-        _git("add", "data/tasks.json")
+        _git("add", "data/")
         _git("commit", "-m", "chore: update task state")
         push = _git("push")
         if push.returncode:
@@ -238,6 +239,7 @@ def main():
     last_commit = time.monotonic()
 
     consecutive_errors = 0
+    recent_errors = []
     while True:
         updates = []
         try:
@@ -249,15 +251,17 @@ def main():
             consecutive_errors = 0
         except Exception as e:
             consecutive_errors += 1
-            print(f"cycle error ({consecutive_errors}):", repr(e), flush=True)
+            detail = f"{now_iran().isoformat()} attempt {consecutive_errors}: {e!r}"
+            print("cycle error:", detail, flush=True)
+            recent_errors.append(detail)
             # Fail loudly rather than idling for the rest of the job window
             # pretending to work — a silently-broken bot is what hid this.
             if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
-                print(
-                    f"خطا: {consecutive_errors} بار پشت سر هم نتونستم به تلگرام وصل بشم. "
-                    "اجرا متوقف شد.",
-                    flush=True,
-                )
+                print(f"خطا: {consecutive_errors} بار پشت سر هم اتصال شکست خورد.", flush=True)
+                # Written into the repo because the Actions job log needs a
+                # token to fetch, while the committed file does not.
+                with open(ERROR_LOG_PATH, "w", encoding="utf-8") as f:
+                    f.write("\n".join(recent_errors) + "\n")
                 save_state(STATE_PATH, state)
                 if args.git_sync:
                     _git_sync()

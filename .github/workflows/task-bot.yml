@@ -49,3 +49,6 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Without this, Python block-buffers stdout on CI and every
+          # diagnostic line stays invisible until the process ends.
+          PYTHONUNBUFFERED: "1"
