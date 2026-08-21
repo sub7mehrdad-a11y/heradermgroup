@@ -4,10 +4,11 @@ from .task_card import format_task_card, build_keyboard
 HELP_TEXT = (
     "راهنمای ربات وظایف:\n\n"
     "می‌تونی معمولی و فارسی بنویسی (مثلاً «فرزان فردا ساعت ۶ باید فاکتورها رو بفرسته») "
-    "و هوش مصنوعی خودش تبدیلش می‌کنه به تسک.\n\n"
+    "و هوش مصنوعی خودش تبدیلش می‌کنه به تسک. ذکر ددلاین اجباری نیست — "
+    "اگه ننویسی، با دکمه‌های روی کارت تعیینش می‌کنی.\n\n"
     "یا از این دستورهای مطمئن استفاده کن:\n"
-    "/task <ددلاین> | <شرح کار>    → تسک برای خودت\n"
-    "/assign <ددلاین> | <شرح کار>  → تسک برای طرف مقابل (ارجاع)\n"
+    "/task [ددلاین |] <شرح کار>    → تسک برای خودت\n"
+    "/assign [ددلاین |] <شرح کار>  → تسک برای طرف مقابل (ارجاع)\n"
     "/done <شماره> [یادداشت]       → تسک رو انجام‌شده کن\n"
     "/handoff <شماره> | <یادداشت>  → بخشی از کار رو انجام دادی، بقیه رو ارجاع بده\n"
     "/tasks                        → تسک‌های باز خودت\n"
@@ -34,10 +35,20 @@ def _find_task(state, task_id):
 
 
 def _fmt_dt(iso_text):
+    if not iso_text:
+        return "تعیین نشده"
     return iso_text[:16].replace("T", " ")
 
 
+def _deadline_sort_key(task):
+    """Tasks with no deadline sort last rather than raising on None < str."""
+    deadline = task.get("deadline")
+    return (deadline is None, deadline or "")
+
+
 def create_task(state, chat_id, thread_id, creator, assignee, title, description, deadline):
+    """`deadline` may be None — a task assigned without one is still a real
+    task, and the card offers buttons to set it afterwards."""
     now = now_iran().isoformat()
     task = {
         "id": state["next_id"],
@@ -48,7 +59,7 @@ def create_task(state, chat_id, thread_id, creator, assignee, title, description
         "chat_id": chat_id,
         "thread_id": thread_id,
         "created_at": now,
-        "deadline": deadline.isoformat(),
+        "deadline": deadline.isoformat() if deadline else None,
         "status": "open",
         "history": [{"actor": creator, "action": "create", "note": None, "at": now}],
         "last_reminder_at": None,
@@ -58,6 +69,17 @@ def create_task(state, chat_id, thread_id, creator, assignee, title, description
     state["tasks"].append(task)
     state["next_id"] += 1
     return task
+
+
+def set_deadline(state, task_id, actor, deadline):
+    task = _find_task(state, task_id)
+    if task is None:
+        return False, f"تسک #{task_id} پیدا نشد.", None
+    if task["status"] != "open":
+        return False, f"تسک #{task_id} از قبل بسته شده.", None
+    task["deadline"] = deadline.isoformat()
+    task["last_reminder_at"] = None
+    return True, f"🗓 ددلاین تسک #{task_id} روی {deadline.strftime('%Y-%m-%d %H:%M')} تنظیم شد.", task
 
 
 def mark_done(state, task_id, actor, note):
@@ -118,13 +140,16 @@ def process_update(state, config, msg):
         return [_text(HELP_TEXT)]
 
     if cmd in ("/task", "/assign"):
-        if "|" not in rest:
-            return [_text("فرمت درست: /task ددلاین | شرح کار\n/help رو بزن برای نمونه‌ها.")]
-        deadline_text, desc = (p.strip() for p in rest.split("|", 1))
+        if "|" in rest:
+            deadline_text, desc = (p.strip() for p in rest.split("|", 1))
+        else:
+            # No "|" means no deadline was given — still a valid task, the
+            # card will offer buttons to set one.
+            deadline_text, desc = "", rest.strip()
         if not desc:
-            return [_text("شرح کار رو ننوشتی.")]
-        deadline = parse_deadline(deadline_text)
-        if deadline is None:
+            return [_text("شرح کار رو ننوشتی.\nنمونه: /assign فردا 18:00 | تماس با تامین‌کننده")]
+        deadline = parse_deadline(deadline_text) if deadline_text else None
+        if deadline_text and deadline is None:
             return [_text(f"ددلاین «{deadline_text}» فهمیده نشد. نمونه: فردا 18:00 / امروز / 2 روز دیگر")]
         assignee = username if cmd == "/task" else _other_user(username, users)
         if assignee is None:
@@ -188,8 +213,8 @@ def process_update(state, config, msg):
         if not mine:
             return [_text("تسک باز نداری. 🎉")]
         lines = ["تسک‌های باز تو:"]
-        for t in sorted(mine, key=lambda x: x["deadline"]):
-            lines.append(f"#{t['id']} — {t['title']} (موعد: {_fmt_dt(t['deadline'])})")
+        for t in sorted(mine, key=_deadline_sort_key):
+            lines.append(f"#{t['id']} — {t['title']} (موعد: {_fmt_dt(t.get('deadline'))})")
         return [_text("\n".join(lines))]
 
     if cmd == "/alltasks":
@@ -197,9 +222,9 @@ def process_update(state, config, msg):
         if not open_tasks:
             return [_text("هیچ تسک بازی نیست. 🎉")]
         lines = ["همه‌ی تسک‌های باز:"]
-        for t in sorted(open_tasks, key=lambda x: x["deadline"]):
+        for t in sorted(open_tasks, key=_deadline_sort_key):
             who = users.get(t["assignee"], t["assignee"])
-            lines.append(f"#{t['id']} — {t['title']} → {who} (موعد: {_fmt_dt(t['deadline'])})")
+            lines.append(f"#{t['id']} — {t['title']} → {who} (موعد: {_fmt_dt(t.get('deadline'))})")
         return [_text("\n".join(lines))]
 
     return [_text(f"دستور ناشناخته: {cmd}\n/help رو بزن برای راهنما.")]

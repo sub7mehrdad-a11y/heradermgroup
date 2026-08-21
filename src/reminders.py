@@ -25,14 +25,21 @@ def check_and_send_reminders(state, tg, config, now):
         if now - base < REMINDER_INTERVAL:
             continue
 
-        deadline = _parse(task["deadline"])
         assignee_name = users.get(task["assignee"], task["assignee"])
-        overdue = now > deadline
-        prefix = "⚠️ (از سررسید گذشته) " if overdue else "⏰ "
+        raw_deadline = task.get("deadline")
+        deadline = _parse(raw_deadline) if raw_deadline else None
+
+        if deadline is None:
+            prefix = "⏰ "
+            deadline_line = "ددلاین: تعیین نشده"
+        else:
+            prefix = "⚠️ (از سررسید گذشته) " if now > deadline else "⏰ "
+            deadline_line = f"ددلاین: {_fmt(deadline)}"
+
         text = (
             f"{prefix}یادآوری تسک #{task['id']} برای {assignee_name}\n"
             f"{task['title']}\n"
-            f"ددلاین: {_fmt(deadline)}"
+            f"{deadline_line}"
         )
 
         tg.send_message(task["chat_id"], text, message_thread_id=task.get("thread_id"))

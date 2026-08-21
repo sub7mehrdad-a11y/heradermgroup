@@ -8,10 +8,10 @@ import time
 
 from src.telegram_api import TelegramAPI
 from src.storage import load_state, save_state, load_config
-from src.commands import process_update, mark_done, handoff_task
+from src.commands import process_update, mark_done, handoff_task, set_deadline
 from src.ai_flow import handle_free_text
 from src.reminders import check_and_send_reminders
-from src.date_parser import now_iran
+from src.date_parser import now_iran, parse_deadline
 from src.task_card import format_task_card, build_keyboard
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +20,14 @@ CONFIG_PATH = os.path.join(BASE, "data", "config.json")
 
 LONG_POLL_SECONDS = 30
 COMMIT_DEBOUNCE_SECONDS = 120
+
+# Maps a deadline button's callback code to a phrase parse_deadline understands.
+DEADLINE_OPTIONS = {
+    "today": "امروز",
+    "tomorrow": "فردا",
+    "2days": "2 روز دیگر",
+    "week": "7 روز دیگر",
+}
 
 _stop = False
 
@@ -77,7 +85,8 @@ def _handle_callback(state, config, tg, cq):
         tg.answer_callback_query(cq["id"])
         return
 
-    action, _, id_text = data.partition(":")
+    action, _, rest = data.partition(":")
+    id_text, _, option = rest.partition(":")
     try:
         task_id = int(id_text)
     except ValueError:
@@ -88,6 +97,12 @@ def _handle_callback(state, config, tg, cq):
         ok, msg, _task = mark_done(state, task_id, username, "")
     elif action == "handoff":
         ok, msg, _task = handoff_task(state, config, task_id, username, "")
+    elif action == "dl":
+        deadline = parse_deadline(DEADLINE_OPTIONS.get(option, ""))
+        if deadline is None:
+            ok, msg = False, "گزینه ددلاین نامعتبر است."
+        else:
+            ok, msg, _task = set_deadline(state, task_id, username, deadline)
     else:
         ok, msg = False, None
 

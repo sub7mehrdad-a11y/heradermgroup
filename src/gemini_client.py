@@ -52,7 +52,15 @@ def _ask_json(api_key, prompt):
     return None
 
 
+NOT_A_TASK = {"is_task": False}
+
+
 def extract_task(api_key, text, sender_username, users, now_iso):
+    """Returns a task dict, NOT_A_TASK, or None when the API itself failed.
+
+    Callers must distinguish the last case: "the model is unreachable" needs
+    to be reported to the user, while "this isn't a task" must stay silent.
+    """
     names = "، ".join(f'"{u}" ({name})' for u, name in users.items())
     prompt = f"""شما دستیار پردازش پیام‌های یک گروه کاری دو نفره هستید.
 افراد گروه: {names}
@@ -62,20 +70,23 @@ def extract_task(api_key, text, sender_username, users, now_iso):
 متن پیام:
 \"\"\"{text}\"\"\"
 
-اگر این پیام یک تسک/وظیفه مشخص با ددلاین برای یکی از این دو نفر توصیف می‌کنه،
+اگر این پیام یک کار/وظیفه برای یکی از این دو نفر توصیف می‌کنه (حتی اگر ددلاین ذکر نشده باشه)،
 فقط یک JSON خام (بدون Markdown، بدون توضیح اضافه) با این ساختار دقیق برگردون:
-{{"is_task": true, "assignee": "<یوزرنیم دقیق مسئول کار، از بین {list(users.keys())}>", "title": "<عنوان کوتاه فارسی، حداکثر ۸ کلمه>", "description": "<توضیح کامل‌تر کار>", "deadline_phrase": "<عبارت ددلاین دقیقاً به همان شکلی که در پیام آمده>"}}
+{{"is_task": true, "assignee": "<یوزرنیم دقیق مسئول کار، از بین {list(users.keys())}>", "title": "<عنوان کوتاه فارسی، حداکثر ۸ کلمه>", "description": "<توضیح کامل‌تر کار>", "deadline_phrase": "<عبارت ددلاین دقیقاً به همان شکلی که در پیام آمده، یا رشته خالی اگر ددلاینی ذکر نشده>"}}
 
-اگر پیام یک تسک با ددلاین مشخص نیست (مثلاً چت عادی یا گزارش کار یا سوال است)، فقط برگردون:
+نکته مهم درباره مسئول کار: اگر پیام خطاب به نفر مقابل نوشته شده (مثلاً با صدا زدن اسمش یا لحن درخواستی)،
+مسئول کار اون نفره، نه نویسنده پیام. فقط اگر نویسنده صراحتاً از کار خودش حرف می‌زنه، مسئول خودشه.
+
+اگر پیام اصلاً کار/وظیفه‌ای رو توصیف نمی‌کنه (چت عادی، سوال، نظر، گزارش)، فقط برگردون:
 {{"is_task": false}}
 """
     result = _ask_json(api_key, prompt)
-    if not result or not result.get("is_task"):
-        return None
+    if result is None:
+        return None  # model unreachable — caller surfaces this
+    if not result.get("is_task"):
+        return NOT_A_TASK
     if result.get("assignee") not in users:
-        return None
-    if not result.get("deadline_phrase"):
-        return None
+        return NOT_A_TASK
     return result
 
 
