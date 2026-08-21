@@ -1,22 +1,29 @@
 """Cheap local pre-filter deciding whether a message is worth an AI call.
 
-Without this, every casual line of group chat ("اسنس کوزارکس چی؟") burns a
-Gemini request. The two of them chat constantly, so that drained the free
-tier for no benefit. A message only reaches the model if it carries at
-least one hint of being an assignment.
+Two jobs, and the second one matters more than the first:
+
+1. Ordinary chat must never cost a Gemini request. These two talk all day.
+2. Ordinary chat must never become a task. In a live run against the real
+   group, "سفارش ندادم هنوز" and "امروز ارسال نشده پس" both became tasks,
+   because this filter used to treat everyday shop vocabulary ("سفارش",
+   "ارسال", "امروز") as evidence of an assignment. A false task is worse
+   than a missed one: it clutters the topic and nags every six hours.
+
+So a message now only reaches the model if it either names the other
+person or contains an unambiguous imperative. A time word alone proves
+nothing — this group says "امروز" constantly about things that already
+happened. Anything this filter drops can still be filed with /assign.
 """
 
-TIME_HINTS = (
-    "فردا", "امروز", "پس فردا", "پس‌فردا", "امشب", "صبح", "ظهر", "عصر", "شب",
-    "ساعت", "هفته", "ماه", "ددلاین", "مهلت", "سررسید", "تا آخر", "روز دیگ",
-    "ساعت دیگ", "شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "سه شنبه",
-    "چهارشنبه", "پنج‌شنبه", "پنجشنبه", "جمعه",
-)
-
+# Imperative verb forms and explicit request words only. Deliberately no
+# bare nouns ("سفارش", "ارسال", "فاکتور"): those are what these two discuss
+# all day and they carry no instruction on their own.
 REQUEST_HINTS = (
-    "لطفا", "لطفاً", "باید", "بزن", "بفرست", "برو", "بگیر", "چک کن", "پیگیری",
-    "آماده کن", "اماده کن", "انجام بده", "یادت نره", "فراموش نکن", "ثبت",
-    "تماس", "هماهنگ", "سفارش", "بررسی کن", "درست کن", "اضافه کن", "به‌روز",
+    "لطفا", "لطفاً", "باید", "یادت نره", "یادت باشه", "فراموش نکن",
+    "بفرست", "بفرستید", "ارسال کن", "چک کن", "چک کنید", "بررسی کن",
+    "پیگیری کن", "آماده کن", "اماده کن", "انجام بده", "انجام بدید",
+    "اضافه کن", "درست کن", "تماس بگیر", "هماهنگ کن", "ثبت کن", "ثبت کنید",
+    "بزن", "قرار بده", "قرار بدید", "وارد کن", "به‌روز کن", "بروز کن",
 )
 
 MIN_LENGTH = 12
@@ -30,16 +37,11 @@ def looks_like_task(text, users):
     lowered = text.lower()
 
     for username, display_name in users.items():
-        if username in lowered or f"@{username}" in lowered:
+        if username in lowered:
             return True
         # Persian vocative often appends a letter ("فرزان" -> "فرزانه"),
-        # so match on the name as a prefix rather than a whole word.
+        # so match the name as a prefix rather than a whole word.
         if display_name and display_name in text:
             return True
 
-    if any(hint in text for hint in TIME_HINTS):
-        return True
-    if any(hint in text for hint in REQUEST_HINTS):
-        return True
-
-    return False
+    return any(hint in text for hint in REQUEST_HINTS)
