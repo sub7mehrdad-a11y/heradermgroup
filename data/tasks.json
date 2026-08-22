@@ -1,6 +1,6 @@
 {
-  "offset": 761803745,
-  "next_id": 14,
+  "offset": 761803747,
+  "next_id": 15,
   "tasks": [
     {
       "id": 1,
@@ -393,6 +393,32 @@
       "task_message_id": 21732,
       "dm_message_ids": {
         "mehrdad1400": 38
+      }
+    },
+    {
+      "id": 14,
+      "title": "پاک کردن کروم از اینجا",
+      "description": "هر کرومی که گذاشته شده را از اینجا پاک کنید",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": 3151,
+      "created_at": "2026-08-22T21:20:55.476319+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-08-22T21:20:55.476319+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 21739,
+      "dm_message_ids": {
+        "mehrdad1400": 39
       }
     }
   ],
