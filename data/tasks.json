@@ -1,5 +1,5 @@
 {
-  "offset": 761803761,
+  "offset": 761803762,
   "next_id": 16,
   "tasks": [
     {
@@ -436,7 +436,7 @@
       "chat_id": -1002160137754,
       "thread_id": 3151,
       "created_at": "2026-08-22T21:37:12.372684+03:30",
-      "deadline": null,
+      "deadline": "2026-08-23T18:00:00+03:30",
       "status": "open",
       "history": [
         {
