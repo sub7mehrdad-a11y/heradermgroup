@@ -1,6 +1,6 @@
 {
-  "offset": 761803760,
-  "next_id": 15,
+  "offset": 761803761,
+  "next_id": 16,
   "tasks": [
     {
       "id": 1,
@@ -425,6 +425,32 @@
       "task_message_id": 21739,
       "dm_message_ids": {
         "mehrdad1400": 39
+      }
+    },
+    {
+      "id": 15,
+      "title": "تغییر محصولات شگفت‌انگیز به انواع گانگ اسکین",
+      "description": "همه محصولات شگفت‌انگیز به انواع گانگ اسکین تغییر یابند.",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": 3151,
+      "created_at": "2026-08-22T21:37:12.372684+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-08-22T21:37:12.372684+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 21751,
+      "dm_message_ids": {
+        "mehrdad1400": 40
       }
     }
   ],
