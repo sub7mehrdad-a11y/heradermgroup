@@ -1,5 +1,5 @@
 {
-  "offset": 761803698,
+  "offset": 761803701,
   "next_id": 13,
   "tasks": [
     {
@@ -335,17 +335,23 @@
       "thread_id": 9333,
       "created_at": "2026-08-22T16:49:31.986054+03:30",
       "deadline": "2026-08-23T18:00:00+03:30",
-      "status": "open",
+      "status": "done",
       "history": [
         {
           "actor": "farzan1369",
           "action": "create",
           "note": null,
           "at": "2026-08-22T16:49:31.986054+03:30"
+        },
+        {
+          "actor": "mehrdad1400",
+          "action": "done",
+          "note": "فایل صوتی جعفر در گروه قرار داده شد.",
+          "at": "2026-08-22T18:45:44.791592+03:30"
         }
       ],
       "last_reminder_at": null,
-      "done_at": null,
+      "done_at": "2026-08-22T18:45:44.791592+03:30",
       "task_message_id": 21678,
       "dm_message_ids": {
         "mehrdad1400": 37
