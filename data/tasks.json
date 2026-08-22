@@ -1,6 +1,6 @@
 {
-  "offset": 761803687,
-  "next_id": 10,
+  "offset": 761803689,
+  "next_id": 11,
   "tasks": [
     {
       "id": 1,
@@ -271,6 +271,32 @@
       "task_message_id": 21671,
       "dm_message_ids": {
         "mehrdad1400": 34
+      }
+    },
+    {
+      "id": 10,
+      "title": "چک کردن موجودی مکمل‌ها از جعفر",
+      "description": "چک کردن موجودی انواع مکمل به جز فیتو و امگا ۳، ۶، ۹ از جعفر",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": 9333,
+      "created_at": "2026-08-22T16:29:11.923905+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-08-22T16:29:11.923905+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 21673,
+      "dm_message_ids": {
+        "mehrdad1400": 35
       }
     }
   ],
