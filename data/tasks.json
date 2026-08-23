@@ -1,6 +1,6 @@
 {
-  "offset": 761803769,
-  "next_id": 16,
+  "offset": 761803771,
+  "next_id": 17,
   "tasks": [
     {
       "id": 1,
@@ -457,6 +457,32 @@
       "task_message_id": 21751,
       "dm_message_ids": {
         "mehrdad1400": 40
+      }
+    },
+    {
+      "id": 16,
+      "title": "ارسال لیست دقیق",
+      "description": "لیست دقیق ارسال شده را بفرست",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": 21248,
+      "created_at": "2026-08-23T08:52:18.062741+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-08-23T08:52:18.062741+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 21767,
+      "dm_message_ids": {
+        "mehrdad1400": 47
       }
     }
   ],
