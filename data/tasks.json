@@ -1,6 +1,6 @@
 {
-  "offset": 761803825,
-  "next_id": 19,
+  "offset": 761803830,
+  "next_id": 20,
   "tasks": [
     {
       "id": 1,
@@ -565,6 +565,32 @@
       "task_message_id": 21783,
       "dm_message_ids": {
         "mehrdad1400": 50
+      }
+    },
+    {
+      "id": 19,
+      "title": "ارسال دو عدد سی‌سی کرم فارماسی شماره ۲",
+      "description": "بررسی امکان ارسال دو عدد سی‌سی کرم فارماسی شماره ۲ در همین لحظه",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": null,
+      "created_at": "2026-08-24T16:24:43.130784+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-08-24T16:24:43.130784+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 21841,
+      "dm_message_ids": {
+        "mehrdad1400": 63
       }
     }
   ],
