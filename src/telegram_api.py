@@ -9,12 +9,23 @@ class TelegramAPI:
 
     def _call(self, method, http_timeout=30, **params):
         url = API_ROOT.format(token=self.token, method=method)
-        r = requests.post(url, json=params, timeout=http_timeout)
-        r.raise_for_status()
+        try:
+            r = requests.post(url, json=params, timeout=http_timeout)
+            r.raise_for_status()
+        except requests.RequestException as e:
+            # requests embeds the full request URL — token included — in
+            # connection/timeout/HTTP error messages. Those exceptions
+            # eventually get written into a committed, PUBLIC error log
+            # (see main.py's MAX_CONSECUTIVE_ERRORS path), so the raw
+            # message must never leave this function with the token in it.
+            raise RuntimeError(f"Telegram request failed on {method}: {self._redact(str(e))}") from None
         data = r.json()
         if not data.get("ok"):
             raise RuntimeError(f"Telegram API error on {method}: {data}")
         return data["result"]
+
+    def _redact(self, text):
+        return text.replace(self.token, "***") if self.token else text
 
     def get_updates(self, offset=None, timeout=0, allowed_updates=None):
         params = {

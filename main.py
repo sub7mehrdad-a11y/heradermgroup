@@ -39,6 +39,17 @@ def _request_stop(signum, frame):
     _stop = True
 
 
+def _redact_secrets(text, secrets):
+    """Strip any of `secrets` out of `text`. Last line of defense before an
+    error message reaches ERROR_LOG_PATH, which gets committed to this
+    (intentionally public) repo — a token that slips through here would be
+    permanently exposed."""
+    for secret in secrets:
+        if secret:
+            text = text.replace(secret, "***")
+    return text
+
+
 def _fingerprint(state):
     return json.dumps(state, sort_keys=True, ensure_ascii=False)
 
@@ -358,7 +369,10 @@ def main():
             consecutive_errors = 0
         except Exception as e:
             consecutive_errors += 1
-            detail = f"{now_iran().isoformat()} attempt {consecutive_errors}: {e!r}"
+            detail = _redact_secrets(
+                f"{now_iran().isoformat()} attempt {consecutive_errors}: {e!r}",
+                (token, gemini_key),
+            )
             print("cycle error:", detail, flush=True)
             recent_errors.append(detail)
             # Fail loudly rather than idling for the rest of the job window
