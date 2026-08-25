@@ -30,6 +30,9 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Run tests
+        run: python -m unittest discover -s tests
+
       # These probes exist so a connectivity failure shows up as a named
       # step in the Actions API, which is readable without a token — the
       # job log itself is not. continue-on-error keeps every probe running

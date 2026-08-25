@@ -100,4 +100,5 @@
 - `src/reminders.py` — منطق یادآوری (فقط چت خصوصی مسئول فعلی تسک)
 - `data/tasks.json` — وضعیت تسک‌ها و چت‌های خصوصی ثبت‌شده (خودکار آپدیت می‌شه)
 - `data/config.json` — یوزرنیم دو نفر شرکت‌کننده
+- `tests/` — تست‌های واحد برای تشخیص ددلاین و فیلتر تسک (قبل از هر اجرا در CI هم اجرا می‌شن؛ `python -m unittest discover -s tests`)
 - `.github/workflows/task-bot.yml` — زمان‌بندی اجرا
