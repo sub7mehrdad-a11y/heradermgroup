@@ -1,6 +1,6 @@
 {
-  "offset": 761803839,
-  "next_id": 20,
+  "offset": 761803840,
+  "next_id": 21,
   "tasks": [
     {
       "id": 1,
@@ -603,6 +603,32 @@
       "task_message_id": 21841,
       "dm_message_ids": {
         "mehrdad1400": 63
+      }
+    },
+    {
+      "id": 20,
+      "title": "لایک نکردن ارسالی‌های طیب",
+      "description": "ارسالی‌های طیب از ۵ روز پیش تاکنون لایک نشده‌اند و باید بررسی و لایک شوند.",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": 21245,
+      "created_at": "2026-08-25T09:20:02.075498+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-08-25T09:20:02.075498+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 21852,
+      "dm_message_ids": {
+        "mehrdad1400": 65
       }
     }
   ],
