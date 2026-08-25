@@ -29,9 +29,25 @@ def check_and_send_reminders(state, tg, config, now):
 
         # Reminders are private now — only the current assignee's DM, never
         # the group. If they never pressed /start there's no chat to send
-        # to, so this task just goes unreminded until they do.
+        # to, so this task just goes unreminded until they do. That would
+        # fail silently, so the group gets a one-time nudge instead (once
+        # per assignee — handoff_task() clears the flag when the task moves
+        # to someone else who may also need it).
         dm_chat_id = dm_chats.get(task["assignee"])
         if not dm_chat_id:
+            if not task.get("no_dm_nudge_sent"):
+                assignee_name = users.get(task["assignee"], task["assignee"])
+                try:
+                    tg.send_message(
+                        task["chat_id"],
+                        f"⏰ تسک #{task['id']} ({task['title']}) برای {assignee_name} یادآوری داره، "
+                        f"ولی چون {assignee_name} هنوز توی چت خصوصی به ربات /start نزده، نمی‌تونم "
+                        f"یادآوری‌ها رو براش بفرستم. لطفاً یک‌بار به ربات پیام /start بده.",
+                        message_thread_id=task.get("thread_id"),
+                    )
+                except Exception:
+                    pass
+                task["no_dm_nudge_sent"] = True
             task["last_reminder_at"] = now.isoformat()
             continue
 

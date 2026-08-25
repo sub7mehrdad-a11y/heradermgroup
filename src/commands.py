@@ -109,6 +109,7 @@ def handoff_task(state, config, task_id, actor, note):
         return False, "طرف مقابل پیدا نشد.", None
     task["assignee"] = other
     task["last_reminder_at"] = None
+    task["no_dm_nudge_sent"] = False  # the new assignee may need their own /start nudge
     task["history"].append({
         "actor": actor, "action": "handoff", "note": note or None, "at": now_iran().isoformat()
     })
