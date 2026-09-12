@@ -1,6 +1,6 @@
 {
-  "offset": 761803991,
-  "next_id": 25,
+  "offset": 761803996,
+  "next_id": 26,
   "tasks": [
     {
       "id": 1,
@@ -776,6 +776,32 @@
       "task_message_id": 21965,
       "dm_message_ids": {
         "mehrdad1400": 72
+      }
+    },
+    {
+      "id": 25,
+      "title": "ارسال سریع تر آپیو",
+      "description": "به فرد مورد نظر بگویید که فردا حتماً آپیو را سریع تر بفرستد.",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": null,
+      "created_at": "2026-09-12T19:34:43.572853+03:30",
+      "deadline": "2026-09-13T18:00:00+03:30",
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-09-12T19:34:43.572853+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 22002,
+      "dm_message_ids": {
+        "mehrdad1400": 73
       }
     }
   ],
