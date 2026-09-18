@@ -1,6 +1,6 @@
 {
-  "offset": 761804078,
-  "next_id": 32,
+  "offset": 761804132,
+  "next_id": 34,
   "tasks": [
     {
       "id": 1,
@@ -989,11 +989,63 @@
           "at": "2026-09-16T23:21:58.383459+03:30"
         }
       ],
-      "last_reminder_at": "2026-09-18T07:58:49.676287+03:30",
+      "last_reminder_at": "2026-09-18T17:44:06.631160+03:30",
       "done_at": null,
       "task_message_id": 22046,
       "dm_message_ids": {
         "mehrdad1400": 79
+      }
+    },
+    {
+      "id": 32,
+      "title": "بارگذاری و بررسی محصولات نامشخص",
+      "description": "اینا رو همه رو باید بذاری هر کدوم نمیدونستی چیه بگو",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": 3151,
+      "created_at": "2026-09-18T17:42:36.968052+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-09-18T17:42:36.968052+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 22138,
+      "dm_message_ids": {
+        "mehrdad1400": 85
+      }
+    },
+    {
+      "id": 33,
+      "title": "اعلام سایزهای محصولات",
+      "description": "سایزهای محصولات را برای ثبت در سایت مشخص و اعلام کن",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": null,
+      "created_at": "2026-09-18T17:44:05.916595+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-09-18T17:44:05.916595+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 22139,
+      "dm_message_ids": {
+        "mehrdad1400": 86
       }
     }
   ],
