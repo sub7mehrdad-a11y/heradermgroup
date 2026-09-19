@@ -1,6 +1,6 @@
 {
-  "offset": 761804137,
-  "next_id": 35,
+  "offset": 761804162,
+  "next_id": 36,
   "tasks": [
     {
       "id": 1,
@@ -1006,17 +1006,23 @@
       "thread_id": 3151,
       "created_at": "2026-09-18T17:42:36.968052+03:30",
       "deadline": null,
-      "status": "open",
+      "status": "done",
       "history": [
         {
           "actor": "farzan1369",
           "action": "create",
           "note": null,
           "at": "2026-09-18T17:42:36.968052+03:30"
+        },
+        {
+          "actor": "mehrdad1400",
+          "action": "done",
+          "note": null,
+          "at": "2026-09-19T19:51:21.940909+03:30"
         }
       ],
       "last_reminder_at": "2026-09-19T16:27:32.835792+03:30",
-      "done_at": null,
+      "done_at": "2026-09-19T19:51:21.940909+03:30",
       "task_message_id": 22138,
       "dm_message_ids": {
         "mehrdad1400": 85
@@ -1072,6 +1078,32 @@
       "task_message_id": 22143,
       "dm_message_ids": {
         "mehrdad1400": 97
+      }
+    },
+    {
+      "id": 35,
+      "title": "گذاشتن عکس‌ها برای کم شدن کار مهرداد",
+      "description": "فرزان پیشنهاد کرده که عکس‌ها را خودش بذارد تا کار مهرداد کمتر شود و مهرداد فقط متن را آماده کند.",
+      "creator": "farzan1369",
+      "assignee": "farzan1369",
+      "chat_id": -1002160137754,
+      "thread_id": 3151,
+      "created_at": "2026-09-19T19:51:15.217764+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-09-19T19:51:15.217764+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 22163,
+      "dm_message_ids": {
+        "farzan1369": 98
       }
     }
   ],
