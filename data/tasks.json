@@ -1,6 +1,6 @@
 {
-  "offset": 761804136,
-  "next_id": 34,
+  "offset": 761804137,
+  "next_id": 35,
   "tasks": [
     {
       "id": 1,
@@ -1046,6 +1046,32 @@
       "task_message_id": 22139,
       "dm_message_ids": {
         "mehrdad1400": 86
+      }
+    },
+    {
+      "id": 34,
+      "title": "ارسال فاکتور خرید امروز از جعفر",
+      "description": "مهرداد فاکتور خرید امروز از جعفر را قرار دهد.",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": null,
+      "created_at": "2026-09-19T17:24:40.656770+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-09-19T17:24:40.656770+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 22143,
+      "dm_message_ids": {
+        "mehrdad1400": 97
       }
     }
   ],
