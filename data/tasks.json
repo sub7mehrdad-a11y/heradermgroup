@@ -1,5 +1,5 @@
 {
-  "offset": 761804278,
+  "offset": 761804293,
   "next_id": 39,
   "tasks": [
     {
@@ -1181,7 +1181,7 @@
           "at": "2026-09-22T22:05:26.165016+03:30"
         }
       ],
-      "last_reminder_at": "2026-09-23T14:29:11.267202+03:30",
+      "last_reminder_at": "2026-09-23T23:02:28.573376+03:30",
       "done_at": null,
       "task_message_id": 22256,
       "dm_message_ids": {
@@ -1198,17 +1198,23 @@
       "thread_id": 997,
       "created_at": "2026-09-23T19:33:00.638835+03:30",
       "deadline": null,
-      "status": "open",
+      "status": "done",
       "history": [
         {
           "actor": "farzan1369",
           "action": "create",
           "note": null,
           "at": "2026-09-23T19:33:00.638835+03:30"
+        },
+        {
+          "actor": "mehrdad1400",
+          "action": "done",
+          "note": "به فرد اول پیام داده شد و فرد دوم تایید کرد",
+          "at": "2026-09-23T23:02:27.580921+03:30"
         }
       ],
       "last_reminder_at": null,
-      "done_at": null,
+      "done_at": "2026-09-23T23:02:27.580921+03:30",
       "task_message_id": 22282,
       "dm_message_ids": {
         "mehrdad1400": 122
