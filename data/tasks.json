@@ -1,6 +1,6 @@
 {
-  "offset": 761804270,
-  "next_id": 38,
+  "offset": 761804273,
+  "next_id": 39,
   "tasks": [
     {
       "id": 1,
@@ -1186,6 +1186,32 @@
       "task_message_id": 22256,
       "dm_message_ids": {
         "mehrdad1400": 119
+      }
+    },
+    {
+      "id": 38,
+      "title": "ارتباط و بررسی",
+      "description": "ارتباط گرفتن و چک کردن",
+      "creator": "farzan1369",
+      "assignee": "mehrdad1400",
+      "chat_id": -1002160137754,
+      "thread_id": 997,
+      "created_at": "2026-09-23T19:33:00.638835+03:30",
+      "deadline": null,
+      "status": "open",
+      "history": [
+        {
+          "actor": "farzan1369",
+          "action": "create",
+          "note": null,
+          "at": "2026-09-23T19:33:00.638835+03:30"
+        }
+      ],
+      "last_reminder_at": null,
+      "done_at": null,
+      "task_message_id": 22282,
+      "dm_message_ids": {
+        "mehrdad1400": 122
       }
     }
   ],
