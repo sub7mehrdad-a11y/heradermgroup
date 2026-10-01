@@ -1245,7 +1245,7 @@
           "at": "2026-10-01T19:35:20.010615+03:30"
         }
       ],
-      "last_reminder_at": null,
+      "last_reminder_at": "2026-10-02T01:35:24.787013+03:30",
       "done_at": null,
       "task_message_id": 22448,
       "dm_message_ids": {
